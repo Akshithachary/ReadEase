@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadEase - Chapter Readability Checker</title>
+<style>
+body{font-family:system-ui,sans-serif; max-width:800px; margin:0 auto; padding:20px; background:#fafafa}
+h1{color:#111}
+textarea{width:100%; height:200px; padding:15px; border:2px solid #ddd; border-radius:12px; font-size:16px}
+button{background:#111; color:white; padding:12px 24px; border-radius:8px; border:none; cursor:pointer; font-weight:bold; margin-top:10px}
+#result{margin-top:20px; background:white; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+.sentence{padding:8px; margin:6px 0; border-radius:6px; display:inline-block}
+.hard{background:#ffe0e0; border-left:4px solid #ff4444}
+.score{font-size:48px; font-weight:bold}
+</style>
+</head>
+<body>
+<h1>ReadEase 📖</h1>
+<p>Paste your chapter below and get readability score + 5 hardest sentences</p>
+<textarea id="input" placeholder="Paste your chapter here..."></textarea><br>
+<button onclick="analyze()">Analyze Readability</button>
+<div id="result"></div>
+<script>
+function analyze(){
+  const text = document.getElementById('input').value;
+  if(!text.trim()) return alert('Paste some text!');
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const words = text.split(/\s+/).length;
+  const syllables = text.toLowerCase().match(/[aeiouy]+/g)?.length || words;
+  const avgSentLen = words / sentences.length;
+  const avgSyl = syllables / words;
+  const flesch = Math.round(206.835 - 1.015*avgSentLen - 84.6*avgSyl);
+  let level = flesch>70?'Easy':flesch>50?'Fairly Difficult':'Difficult';
+  const scored = sentences.map(s=>{
+    const w = s.split(/\s+/).length;
+    const complex = (s.match(/\b\w{10,}\b/g)||[]).length;
+    return {text:s.trim(), score:w + complex*3}
+  }).sort((a,b)=>b.score-a.score).slice(0,5);
+  let html = `<div class='score'>${flesch}</div><div><b>${level}</b> - Flesch Reading Ease</div>`;
+  html += `<p><b>Total:</b> ${words} words, ${sentences.length} sentences</p><h3>🔴 5 Hardest Sentences:</h3>`;
+  scored.forEach((s,i)=>{ html+=`<div class='sentence hard'><b>${i+1}.</b> ${s.text}</div><br>` });
+  html+=`<h3>Full Text Highlighted:</h3>`;
+  sentences.forEach(s=>{
+    const isHard = scored.some(h=>h.text===s.trim());
+    html+=`<span class='sentence ${isHard?'hard':''}'>${s}</span> `
+  });
+  document.getElementById('result').innerHTML=html;
+}
+</script>
+</body>
+</html>
